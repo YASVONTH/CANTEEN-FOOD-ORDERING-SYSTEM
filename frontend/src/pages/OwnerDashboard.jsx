@@ -1,49 +1,21 @@
 import { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
-import { API_BASE_URL, SOCKET_URL } from '../config';
+import { getDemoOrders, subscribeToDemoChanges, updateDemoOrderStatus } from '../demoStore';
 
 const OwnerDashboard = () => {
     const [orders, setOrders] = useState([]);
     const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0, todayRevenue: 0, monthRevenue: 0 });
     const [loading, setLoading] = useState(true);
 
-    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-
     useEffect(() => {
-        // Listen for new orders instantly
-        const socket = io(SOCKET_URL);
-
-        socket.on('newOrder', (order) => {
-            setOrders((prev) => [order, ...prev]);
-        });
-
-        socket.on('orderStatusUpdated', ({ orderId, status }) => {
-            setOrders((prev) =>
-                prev.map((o) => (o._id === orderId ? { ...o, status } : o))
-            );
-        });
-
-        return () => socket.disconnect();
-    }, []);
-
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const res = await fetch(`${API_BASE_URL}/orders`, {
-                    headers: { Authorization: `Bearer ${userInfo.token}` }
-                });
-                const data = await res.json();
-
-                setOrders(data);
-                calculateStats(data);
-                setLoading(false);
-            } catch (err) {
-                console.error(err);
-                setLoading(false);
-            }
+        const refreshOrders = () => {
+            const data = getDemoOrders();
+            setOrders(data);
+            calculateStats(data);
+            setLoading(false);
         };
-        fetchOrders();
-    }, [userInfo.token]);
+        refreshOrders();
+        return subscribeToDemoChanges(refreshOrders);
+    }, []);
 
     const calculateStats = (data) => {
         const today = new Date();
@@ -70,26 +42,11 @@ const OwnerDashboard = () => {
         });
     };
 
-    const updateStatus = async (id, status) => {
-        try {
-            const res = await fetch(`${API_BASE_URL}/orders/${id}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${userInfo.token}`
-                },
-                body: JSON.stringify({ status })
-            });
-
-            if (res.ok) {
-                const updatedOrder = await res.json();
-                const newOrders = orders.map(o => o._id === id ? updatedOrder : o);
-                setOrders(newOrders);
-                calculateStats(newOrders);
-            }
-        } catch (err) {
-            alert('Failed to update status');
-        }
+    const updateStatus = (id, status) => {
+        updateDemoOrderStatus(id, status);
+        const newOrders = getDemoOrders();
+        setOrders(newOrders);
+        calculateStats(newOrders);
     };
 
     return (
@@ -112,7 +69,7 @@ const OwnerDashboard = () => {
                         <div className="stat-value text-success">{stats.completed}</div>
                     </div>
                     <div className="stat-card" style={{ borderLeftColor: 'var(--color-primary)' }}>
-                        <div className="stat-title">Today's Revenue</div>
+                        <div className="stat-title">Today&apos;s Revenue</div>
                         <div className="stat-value" style={{ color: 'var(--color-primary)' }}>₹{stats.todayRevenue.toFixed(2)}</div>
                     </div>
                     <div className="stat-card" style={{ borderLeftColor: 'var(--color-primary)' }}>

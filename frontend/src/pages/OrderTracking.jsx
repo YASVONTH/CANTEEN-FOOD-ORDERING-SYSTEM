@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
-import { API_BASE_URL, SOCKET_URL } from '../config';
+import { getDemoOrdersForUser, subscribeToDemoChanges } from '../demoStore';
 
 const OrderTracking = () => {
     const [orders, setOrders] = useState([]);
@@ -9,43 +8,13 @@ const OrderTracking = () => {
     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
     useEffect(() => {
-        fetchMyOrders();
-
-        // Socket.io connection for real-time order updates
-        const socket = io(SOCKET_URL);
-
-        if (userInfo && userInfo._id) {
-            socket.on(`order-status-${userInfo._id}`, (updatedOrder) => {
-                setOrders(prevOrders =>
-                    prevOrders.map(order => order._id === updatedOrder._id ? updatedOrder : order)
-                );
-
-                if (updatedOrder.status === 'Ready for Pickup') {
-                    alert(`🔔 Your order #${updatedOrder.tokenNumber} is ready! Please collect it from the counter.`);
-                }
-            });
-        }
-
-        return () => {
-            socket.disconnect();
+        const refreshOrders = () => {
+            setOrders(getDemoOrdersForUser(userInfo._id));
+            setLoading(false);
         };
-    }, []);
-
-    const fetchMyOrders = async () => {
-        try {
-            const res = await fetch(`${API_BASE_URL}/orders/myorders`, {
-                headers: {
-                    Authorization: `Bearer ${userInfo.token}`
-                }
-            });
-            const data = await res.json();
-            setOrders(data);
-            setLoading(false);
-        } catch (err) {
-            console.error(err);
-            setLoading(false);
-        }
-    };
+        refreshOrders();
+        return subscribeToDemoChanges(refreshOrders);
+    }, [userInfo._id]);
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -65,7 +34,7 @@ const OrderTracking = () => {
                 <p>Loading your orders...</p>
             ) : orders.length === 0 ? (
                 <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
-                    <h2 style={{ color: 'var(--color-text-muted)' }}>You haven't placed any orders yet.</h2>
+                    <h2 style={{ color: 'var(--color-text-muted)' }}>You haven&apos;t placed any orders yet.</h2>
                 </div>
             ) : (
                 <div className="queue-list">

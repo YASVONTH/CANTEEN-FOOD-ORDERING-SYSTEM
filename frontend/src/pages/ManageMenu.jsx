@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../config';
+import { addDemoMenuItem, deleteDemoMenuItem, getDemoMenu, updateDemoMenuItem } from '../demoStore';
 
 const ManageMenu = () => {
     const [menu, setMenu] = useState([]);
@@ -16,22 +16,13 @@ const ManageMenu = () => {
 
     const [editId, setEditId] = useState(null);
 
-    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-
     useEffect(() => {
         fetchMenu();
     }, []);
 
-    const fetchMenu = async () => {
-        try {
-            const res = await fetch(`${API_BASE_URL}/menu`);
-            const data = await res.json();
-            setMenu(data);
-            setLoading(false);
-        } catch (err) {
-            console.error(err);
-            setLoading(false);
-        }
+    const fetchMenu = () => {
+        setMenu(getDemoMenu());
+        setLoading(false);
     };
 
     const handleOpenModal = (item = null) => {
@@ -60,62 +51,21 @@ const ManageMenu = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const url = editId
-            ? `${API_BASE_URL}/menu/${editId}`
-            : `${API_BASE_URL}/menu`;
-
-        const method = editId ? 'PUT' : 'POST';
-
-        try {
-            const res = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${userInfo.token}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (res.ok) {
-                setShowModal(false);
-                fetchMenu();
-            } else {
-                alert('Failed to save Food Item');
-            }
-        } catch (err) {
-            alert('Error saving data');
-        }
+        if (editId) updateDemoMenuItem(editId, formData);
+        else addDemoMenuItem(formData);
+        setShowModal(false);
+        fetchMenu();
     };
 
     const toggleAvailability = async (id, currentStatus) => {
-        try {
-            await fetch(`${API_BASE_URL}/menu/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${userInfo.token}`
-                },
-                body: JSON.stringify({ isAvailable: !currentStatus })
-            });
-            fetchMenu();
-        } catch (err) {
-            alert('Failed to update availability');
-        }
+        updateDemoMenuItem(id, { isAvailable: !currentStatus });
+        fetchMenu();
     };
 
     const deleteItem = async (id) => {
         if (!window.confirm('Are you sure you want to delete this item?')) return;
-        try {
-            await fetch(`${API_BASE_URL}/menu/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    Authorization: `Bearer ${userInfo.token}`
-                }
-            });
-            fetchMenu();
-        } catch (err) {
-            alert('Failed to delete item');
-        }
+        deleteDemoMenuItem(id);
+        fetchMenu();
     };
 
     return (

@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { API_BASE_URL } from '../config';
+import { loginDemoUser } from '../demoStore';
 
 const Login = ({ setUser }) => {
     const [studentId, setStudentId] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     // Redirect if already logged in
@@ -21,37 +20,15 @@ const Login = ({ setUser }) => {
 
     const submitHandler = async (e) => {
         e.preventDefault();
-        setLoading(true);
-        try {
-            const res = await fetch(`${API_BASE_URL}/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ studentId, password }),
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                if (data.role === 'admin') {
-                    // If admin somehow logs in here, still redirect them
-                    localStorage.setItem('userInfo', JSON.stringify(data));
-                    setUser(data);
-                    navigate('/owner-dashboard');
-                } else {
-                    localStorage.setItem('userInfo', JSON.stringify(data));
-                    setUser(data);
-                    navigate('/');
-                }
-            } else {
-                setError(data.message || 'Login failed');
-            }
-        } catch (err) {
-            setError('Cannot connect to server. Ensure Backend & MongoDB are running.');
-        } finally {
-            setLoading(false);
+        const data = loginDemoUser(studentId, password);
+        if (!data) {
+            setError('Invalid username or password for this browser demo.');
+            return;
         }
+
+        localStorage.setItem('userInfo', JSON.stringify(data));
+        setUser(data);
+        navigate(data.role === 'admin' ? '/owner-dashboard' : '/');
     };
 
     return (
@@ -106,12 +83,12 @@ const Login = ({ setUser }) => {
                         />
                     </div>
 
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem', padding: '1rem' }} disabled={loading}>
-                        {loading ? 'Logging in...' : 'Student Login'}
+                    <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem', padding: '1rem' }}>
+                        Student Login
                     </button>
 
                     <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.95rem' }}>
-                        Don't have an account? <Link to="/register" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Register Here</Link>
+                        Don&apos;t have an account? <Link to="/register" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Register Here</Link>
                     </div>
                 </form>
 

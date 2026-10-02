@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { API_BASE_URL } from '../config';
+import { loginDemoUser } from '../demoStore';
 
 const AdminLogin = ({ setUser }) => {
     const [adminId, setAdminId] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     // Redirect if already logged in
@@ -21,35 +20,15 @@ const AdminLogin = ({ setUser }) => {
 
     const submitHandler = async (e) => {
         e.preventDefault();
-        setLoading(true);
-        try {
-            const res = await fetch(`${API_BASE_URL}/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                // We use "studentId" in the backend payload because the schema uses studentId as the universal username field
-                body: JSON.stringify({ studentId: adminId, password }),
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                if (data.role === 'admin') {
-                    localStorage.setItem('userInfo', JSON.stringify(data));
-                    setUser(data);
-                    navigate('/owner-dashboard');
-                } else {
-                    setError('Access denied. You are not an admin.');
-                }
-            } else {
-                setError(data.message || 'Login failed');
-            }
-        } catch (err) {
-            setError('Cannot connect to server. Ensure Backend & MongoDB are running.');
-        } finally {
-            setLoading(false);
+        const data = loginDemoUser(adminId, password, 'admin');
+        if (!data) {
+            setError('Invalid demo admin credentials.');
+            return;
         }
+
+        localStorage.setItem('userInfo', JSON.stringify(data));
+        setUser(data);
+        navigate('/owner-dashboard');
     };
 
     return (
@@ -70,6 +49,7 @@ const AdminLogin = ({ setUser }) => {
             <div className="auth-card" style={{ borderTop: '5px solid var(--color-primary)' }}>
                 <h2 className="auth-title">Canteen Admin Panel</h2>
                 <p className="auth-subtitle">Owner Login</p>
+                <p className="auth-subtitle">Demo credentials: admin / 2067</p>
 
                 {error && (
                     <div className="p-3 mb-4 rounded" style={{ color: 'var(--color-danger)', borderLeft: '4px solid var(--color-danger)', padding: '10px', background: '#ffebee', marginBottom: '15px' }}>
@@ -104,8 +84,8 @@ const AdminLogin = ({ setUser }) => {
                         />
                     </div>
 
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem', padding: '1rem', backgroundColor: '#333', color: 'white' }} disabled={loading}>
-                        {loading ? 'Logging in...' : 'Sign In as Owner'}
+                    <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem', padding: '1rem', backgroundColor: '#333', color: 'white' }}>
+                        Sign In as Owner
                     </button>
                 </form>
 

@@ -1,28 +1,17 @@
 import { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../config';
-import GooglePayButton from '@google-pay/button-react';
+import { createDemoOrder, getDemoMenu } from '../demoStore';
 
 const Home = () => {
     const [menu, setMenu] = useState([]);
     const [cart, setCart] = useState([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [orderMessage, setOrderMessage] = useState('');
 
     useEffect(() => {
-        fetchMenu();
+        setMenu(getDemoMenu());
+        setLoading(false);
     }, []);
-
-    const fetchMenu = async () => {
-        try {
-            const res = await fetch(`${API_BASE_URL}/menu`);
-            const data = await res.json();
-            setMenu(data);
-            setLoading(false);
-        } catch (err) {
-            console.error(err);
-            setLoading(false);
-        }
-    };
 
     const addToCart = (item) => {
         const existing = cart.find(c => c._id === item._id);
@@ -48,7 +37,7 @@ const Home = () => {
 
     const cartTotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
 
-    const checkoutHandler = async () => {
+    const checkoutHandler = () => {
         if (cart.length === 0) return;
 
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
@@ -61,27 +50,10 @@ const Home = () => {
             foodItem: item._id
         }));
 
-        try {
-            const res = await fetch(`${API_BASE_URL}/orders`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${userInfo.token}`
-                },
-                body: JSON.stringify({
-                    orderItems,
-                    totalPrice: cartTotal
-                })
-            });
-
-            if (res.ok) {
-                setCart([]);
-                setIsSidebarOpen(false);
-                alert('Order placed successfully! Check exactly on the Tracking page.');
-            }
-        } catch (error) {
-            alert('Failed to place order.');
-        }
+        createDemoOrder({ user: userInfo, orderItems, totalPrice: cartTotal });
+        setCart([]);
+        setIsSidebarOpen(false);
+        setOrderMessage('Demo order placed in this browser. No payment was processed.');
     };
 
     return (
@@ -89,6 +61,7 @@ const Home = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h1 className="header-title" style={{ margin: 0 }}>Canteen Menu</h1>
             </div>
+            {orderMessage && <p role="status" className="demo-notice">{orderMessage}</p>}
 
             <button className="btn btn-primary floating-cart-btn" onClick={() => setIsSidebarOpen(true)}>
                 🛒 Cart ({cart.reduce((a, c) => a + c.qty, 0)})
@@ -161,47 +134,9 @@ const Home = () => {
                             <span>Total Amount</span>
                             <span>₹{cartTotal.toFixed(2)}</span>
                         </div>
-                        <GooglePayButton
-                            environment="TEST"
-                            paymentRequest={{
-                                apiVersion: 2,
-                                apiVersionMinor: 0,
-                                allowedPaymentMethods: [
-                                    {
-                                        type: 'CARD',
-                                        parameters: {
-                                            allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
-                                            allowedCardNetworks: ['MASTERCARD', 'VISA'],
-                                        },
-                                        tokenizationSpecification: {
-                                            type: 'PAYMENT_GATEWAY',
-                                            parameters: {
-                                                gateway: 'example',
-                                                gatewayMerchantId: 'exampleGatewayMerchantId',
-                                            },
-                                        },
-                                    },
-                                ],
-                                merchantInfo: {
-                                    merchantId: '12345678901234567890',
-                                    merchantName: 'CanteenHub Demo',
-                                },
-                                transactionInfo: {
-                                    totalPriceStatus: 'FINAL',
-                                    totalPriceLabel: 'Total',
-                                    totalPrice: cartTotal.toFixed(2).toString(),
-                                    currencyCode: 'INR',
-                                    countryCode: 'IN',
-                                },
-                            }}
-                            onLoadPaymentData={paymentRequest => {
-                                console.log('Payment Successful', paymentRequest);
-                                checkoutHandler();
-                            }}
-                            buttonType="pay"
-                            buttonSizeMode="fill"
-                            style={{ width: '100%', marginTop: '0.5rem' }}
-                        />
+                        <button className="btn btn-primary" onClick={checkoutHandler} style={{ width: '100%', marginTop: '0.5rem' }}>
+                            Place Demo Order
+                        </button>
                     </div>
                 )}
             </div>

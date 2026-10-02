@@ -102,6 +102,15 @@ select {
   width: 100%;
 }
 
+.demo-notice {
+  padding: 0.65rem 1rem;
+  background: #fff3e0;
+  border-bottom: 1px solid #f2c184;
+  color: #643b0c;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
 /* Utilities */
 .btn {
   display: inline-flex;

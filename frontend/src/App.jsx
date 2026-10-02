@@ -24,6 +24,9 @@ function App() {
   return (
     <Router>
       <div className="app-container">
+        <div role="note" className="demo-notice">
+          Browser demo only: accounts and orders stay in this browser. Do not enter real passwords or payment details.
+        </div>
         {/* Render Navbar only if user is logged in */}
         {user && <Navbar user={user} setUser={setUser} />}
 
