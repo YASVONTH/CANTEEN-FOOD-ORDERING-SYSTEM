@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerDemoUser } from '../demoStore';
+import { registerUser } from '../dataStore';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -13,6 +13,7 @@ const Register = () => {
         confirmPassword: ''
     });
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -23,137 +24,139 @@ const Register = () => {
         e.preventDefault();
         setError('');
 
-        // Validations
-        if (!formData.regNo.startsWith('92762')) {
-            setError('Registration number must start with 92762');
-            return;
-        }
         if (formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match');
+            setError('Passwords do not match. Please re-enter.');
             return;
         }
 
+        if (formData.password.length < 4) {
+            setError('Password must be at least 4 characters long.');
+            return;
+        }
+
+        setLoading(true);
         try {
-            registerDemoUser(formData);
+            registerUser(formData);
+            alert('Account created successfully! You can now log in.');
             navigate('/login');
         } catch (err) {
             setError(err.message || 'Registration failed');
+            setLoading(false);
         }
     };
 
     return (
         <div className="auth-container">
             <div className="auth-card" style={{ maxWidth: '500px' }}>
-                <h2 className="auth-title">Student Registration</h2>
-                <p className="auth-subtitle">Create a new Canteen account</p>
+                <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '0.25rem' }}>🎓</div>
+                    <h2 className="auth-title" style={{ margin: 0 }}>Student Registration</h2>
+                    <p className="auth-subtitle">Create your CanteenHub account</p>
+                </div>
 
                 {error && (
-                    <div className="p-3 mb-4 rounded" style={{ color: 'var(--color-danger)', borderLeft: '4px solid var(--color-danger)', padding: '10px', background: '#ffebee', marginBottom: '15px' }}>
+                    <div style={{ color: 'var(--color-danger)', borderLeft: '4px solid var(--color-danger)', padding: '10px 14px', background: '#ffebee', borderRadius: '4px', marginBottom: '15px', fontSize: '0.9rem' }}>
                         {error}
                     </div>
                 )}
 
                 <form onSubmit={submitHandler}>
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginBottom: '1rem' }}>
                         <label className="form-label" htmlFor="name">Full Name</label>
                         <input
                             type="text"
                             id="name"
                             className="form-input"
-                            placeholder="John Doe"
+                            placeholder="e.g. Yasvonth Kumar"
                             value={formData.name}
                             onChange={handleChange}
                             required
                         />
                     </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="username">Username</label>
-                        <input
-                            type="text"
-                            id="username"
-                            className="form-input"
-                            placeholder="johndoe123"
-                            value={formData.username}
-                            onChange={handleChange}
-                            required
-                        />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="username">Student ID / Roll No</label>
+                            <input
+                                type="text"
+                                id="username"
+                                className="form-input"
+                                placeholder="e.g. 927621CS001"
+                                value={formData.username}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="userType">Category</label>
+                            <select
+                                id="userType"
+                                className="form-input"
+                                value={formData.userType}
+                                onChange={handleChange}
+                                required
+                            >
+                                <option value="Dayscholar">Dayscholar</option>
+                                <option value="Hosteller">Hosteller</option>
+                                <option value="Staff">Faculty / Staff</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="regNo">Registration Number</label>
-                        <input
-                            type="text"
-                            id="regNo"
-                            className="form-input"
-                            placeholder="Must start with 92762..."
-                            value={formData.regNo}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="userType">Role / Type</label>
-                        <select
-                            id="userType"
-                            className="form-input"
-                            value={formData.userType}
-                            onChange={handleChange}
-                            required
-                        >
-                            <option value="Dayscholar">Dayscholar</option>
-                            <option value="Hosteller">Hosteller</option>
-                            <option value="Staff">Staff</option>
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="email">Email Address</label>
+                    <div className="form-group" style={{ marginBottom: '1rem' }}>
+                        <label className="form-label" htmlFor="email">College Email Address</label>
                         <input
                             type="email"
                             id="email"
                             className="form-input"
-                            placeholder="john@example.com"
+                            placeholder="student@college.edu"
                             value={formData.email}
                             onChange={handleChange}
                             required
                         />
                     </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="password">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            className="form-input"
-                            placeholder="Enter password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            required
-                        />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="password">Password</label>
+                            <input
+                                type="password"
+                                id="password"
+                                className="form-input"
+                                placeholder="••••••••"
+                                value={formData.password}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
+                            <input
+                                type="password"
+                                id="confirmPassword"
+                                className="form-input"
+                                placeholder="••••••••"
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
                     </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
-                        <input
-                            type="password"
-                            id="confirmPassword"
-                            className="form-input"
-                            placeholder="Confirm password"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem', padding: '1rem' }}>
-                        Register
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={loading}
+                        style={{ width: '100%', padding: '0.9rem', fontSize: '1rem', fontWeight: 700 }}
+                    >
+                        {loading ? 'Creating Account...' : 'Register Account ➔'}
                     </button>
                 </form>
 
-                <div className="auth-switch" style={{ marginTop: '2rem', fontSize: '0.95rem' }}>
-                    Already have an account? <Link to="/login" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Login Here</Link>
+                <div className="auth-switch" style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #eee', fontSize: '0.95rem' }}>
+                    Already registered? <Link to="/login" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Login Here</Link>
                 </div>
             </div>
         </div>

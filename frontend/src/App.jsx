@@ -17,16 +17,17 @@ function App() {
     // Check local storage for user profile on initial load
     const storedUser = localStorage.getItem('userInfo');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (err) {
+        console.error('Failed to parse user info', err);
+      }
     }
   }, []);
 
   return (
     <Router>
       <div className="app-container">
-        <div role="note" className="demo-notice">
-          Browser demo only: accounts and orders stay in this browser. Do not enter real passwords or payment details.
-        </div>
         {/* Render Navbar only if user is logged in */}
         {user && <Navbar user={user} setUser={setUser} />}
 
@@ -39,22 +40,25 @@ function App() {
             {/* Student Routes */}
             <Route
               path="/"
-              element={user && user.role === 'student' ? <Home /> : <Navigate to="/login" />}
+              element={user && user.role === 'student' ? <Home /> : <Navigate to="/login" replace />}
             />
             <Route
               path="/track"
-              element={user && user.role === 'student' ? <OrderTracking /> : <Navigate to="/login" />}
+              element={user && user.role === 'student' ? <OrderTracking /> : <Navigate to="/login" replace />}
             />
 
             {/* Owner (Admin) Routes */}
             <Route
               path="/owner-dashboard"
-              element={user && user.role === 'admin' ? <OwnerDashboard /> : <Navigate to="/login" />}
+              element={user && user.role === 'admin' ? <OwnerDashboard /> : <Navigate to="/login" replace />}
             />
             <Route
               path="/owner-menu"
-              element={user && user.role === 'admin' ? <ManageMenu /> : <Navigate to="/login" />}
+              element={user && user.role === 'admin' ? <ManageMenu /> : <Navigate to="/login" replace />}
             />
+            
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
